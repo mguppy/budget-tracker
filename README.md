@@ -15,3 +15,7 @@ https://github.com/mguppy/tech-blog
 ![ScreenShot](Screenshot.png)
 
 Credits: w3schools.com, my tutor, classmates
+
+1. service-worker
+2. manifest.json
+3. db.js
