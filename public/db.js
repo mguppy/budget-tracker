@@ -1,28 +1,30 @@
 let db;
+let budgetVersion;
 
 // Create a new db request for a "budget" database.
-const request = indexedDB.open('BudgetDB', 1);
+const request = indexedDB.open('BudgetDB', budgetVersion || 1);
 
-request.onupgradeneeded = ({target}) => {
-    let db = target.result;
+request.onupgradeneeded = function (e) {
+  console.log('Upgrade needed in IndexDB');
 
-    db.createObjectStore('BudgetStore', {autoIncrement: true});
+  const { oldVersion } = e;
+  const newVersion = e.newVersion || db.version;
+
+  console.log(`DB Updated from version ${oldVersion} to ${newVersion}`);
+
+  db = e.target.result;
+
+  if (db.objectStoreNames.length === 0) {
+    db.createObjectStore('BudgetStore', { autoIncrement: true });
+  }
 };
 
-request.onerror = (e) =>  {
-    console.log(`Woops! ${e.target.errorCode}`);
+request.onerror = function (e) {
+  console.log(`Woops! ${e.target.errorCode}`);
 };
 
-request.onsuccess = ({target}) => {
-    let db = target.result;
-
-    if(navigator.onLine) {
-        checkDatabase() 
-    }
-};
-
-const checkDatabase = () => {
-    console.log('check db invoked');
+function checkDatabase() {
+  console.log('check db invoked');
 
   // Open a transaction on your BudgetStore db
   let transaction = db.transaction(['BudgetStore'], 'readwrite');
@@ -64,17 +66,28 @@ const checkDatabase = () => {
   };
 }
 
+request.onsuccess = function (e) {
+  console.log('success');
+  db = e.target.result;
+
+  // Check if app is online before reading from db
+  if (navigator.onLine) {
+    console.log('Backend online! 🗄️');
+    checkDatabase();
+  }
+};
+
 const saveRecord = (record) => {
-    console.log('Save record invoked');
-    // Create a transaction on the BudgetStore db with readwrite access
-    const transaction = db.transaction(['BudgetStore'], 'readwrite');
-  
-    // Access your BudgetStore object store
-    const store = transaction.objectStore('BudgetStore');
-  
-    // Add record to your store with add method.
-    store.add(record);
-  };
-  
+  console.log('Save record invoked');
+  // Create a transaction on the BudgetStore db with readwrite access
+  const transaction = db.transaction(['BudgetStore'], 'readwrite');
+
+  // Access your BudgetStore object store
+  const store = transaction.objectStore('BudgetStore');
+
+  // Add record to your store with add method.
+  store.add(record);
+};
+
 // Listen for app coming back online
 window.addEventListener('online', checkDatabase);
